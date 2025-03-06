@@ -1,13 +1,35 @@
 #!/bin/bash
 
+# First script to retrieve unique organization IDs
+# Replace with your CircleCI API token
+CIRCLE_TOKEN="REPLACE_WITH_CIRCLE_API_TOKEN"
 
-#USE `chmod +x circleci_usage_export_multi_org.sh` to make the script executable and `source circleci_usage_export_multi_org.sh` to execute the scirpt
+# API endpoint to get collaborations: https://circleci.com/docs/api/v2/index.html#tag/User/operation/getCollaborations
+url="https://circleci.com/api/v2/me/collaborations"
 
-# set envirnment variables 
-CIRCLE_TOKEN="REPLACE_WITH_CCI_PERSONAL_API_TOKEN"
-ORG_IDS=("REPLACE_WITH_ORG1_ID" "REPLACE_WITH_ORG2_ID" "REPLACE_WITH_ORG3_ID") #add a list of org IDs
-START_DATE="2025-02-01T00:00:00Z" #REPLACE WITH START DATE IN THIS FORMAT
-END_DATE="2025-02-28T00:00:00Z" #REPLACE WITH END DATE IN THIS FORMAT
+# Make the API request
+response=$(curl --silent --request GET \
+  --url "$url" \
+  --header "Circle-Token: $CIRCLE_TOKEN")
+
+# Check if the request was successful
+if [[ $? -ne 0 ]]; then
+  echo "Failed to retrieve collaborations."
+  exit 1
+fi
+
+# Use jq to extract unique organization IDs
+unique_ids=$(echo "$response" | jq -r '.[].id' | sort -u)
+
+# Print the extracted unique organization IDs in the requested format
+ORG_IDS=()
+for id in $unique_ids; do
+    ORG_IDS+=("$id")
+done
+
+# Set environment variables
+START_DATE="2025-02-01T00:00:00Z" # REPLACE WITH START DATE IN THIS FORMAT
+END_DATE="2025-02-28T00:00:00Z"   # REPLACE WITH END DATE IN THIS FORMAT
 
 # Loop through each organization ID
 for ORG_ID in "${ORG_IDS[@]}"; do
